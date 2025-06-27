@@ -7,8 +7,9 @@ Make sure the execution directory to the same folder.
 
 """
 # %%
-OPENAI_API_KEY = "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"
 FOLDER_PATH = "G:/My Drive/00_Temp Workspace/250622_研究_LLM_SDM"
+with open(FOLDER_PATH + "/OPENAI_API_KEY.txt", newline='', encoding='utf-8') as f:
+    OPENAI_API_KEY = f.read()
 from openai import OpenAI
 import csv
 client = OpenAI(api_key=OPENAI_API_KEY)
