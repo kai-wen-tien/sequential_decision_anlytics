@@ -1,2 +1,2 @@
-# sequential_decision_anlytics
-Sequential Decision Analytics
+# Sequential Decision Anlytics
+## Introduction
