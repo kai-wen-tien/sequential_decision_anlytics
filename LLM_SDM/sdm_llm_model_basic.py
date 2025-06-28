@@ -103,32 +103,26 @@ class EnergySystemSimulator():
         
         for t in range(len(self.price)):
             price = self.price[t]
+            demand = self.demand
 
             # controller suggests how much to draw from battery or buy
             action = controller.take_action(self.state_of_charge, price, cost)
                 
-            # total supply = battery discharge + market buy
+            # battery discharges only
             battery_contrib = min(max(-action, 0), self.state_of_charge)
-            market_contrib = max(action, 0)     # buy only when action > 0
-            total_supply = battery_contrib + market_contrib
             
-            # ensure demand is met (for realism)
-            if total_supply < self.demand:
-                # buy the rest from market
-                deficit = self.demand - total_supply
-                market_contrib += deficit
-                action += deficit
-                total_supply = self.demand
-                cost += price*deficit    # the difict price is equal to market prices
-            
-            # update battery state of charge
-            self.state_of_charge = max(0, min(100, 
-                                              self.state_of_charge 
-                                              - battery_contrib
-                                              + market_contrib))
-            
-            cost_per_time = price * market_contrib #pay only when buying
+            # if charging, market contributes to battery
+            battery_charge = max(action, 0)
+        
+            # market supplies demand minus battery support
+            market_for_demand = max(demand - battery_contrib, 0)
+        
+            market_contrib = battery_charge + market_for_demand
+            cost_per_time = price * market_contrib
             cost += cost_per_time
+        
+            # update SOC (only charge from battery_charge)
+            self.state_of_charge = max(0, min(100, self.state_of_charge - battery_contrib + battery_charge))         
             
             soc_record.append(self.state_of_charge)
             action_record.append(action)
@@ -162,7 +156,7 @@ NUM_META_ITERATIONS = 10
 # TIME_PER_META = 15
 
 for i in range(NUM_META_ITERATIONS):
-    print(f"\n--- Meta Interation {i+1} ---")
+    print(f"\n--- Meta Decision Loop {i+1} ---")
     
     simulator.reset()      #reset the simulator
     
@@ -176,17 +170,16 @@ for i in range(NUM_META_ITERATIONS):
     #Step 3: Simulate the controller in the enviroment
     try:
         controller = BasePolicyExecutor(base_policy_code)
-        print('base policy code generated...')
         result = simulator.run(controller)
     except Exception as e:
         print(f"[ERROR] BasePolicy Executor filed: {e}")
         
         # Apply error correction here
         base_policy_code = meta_policy.correct_code(base_policy_code, str(e))
+        print('base policy code generated...')        
         
         # Retry
         controller = BasePolicyExecutor(base_policy_code)
-        print('base policy code generated...')
         result = simulator.run(controller)
     
     print('simulation finished...')
