@@ -45,15 +45,14 @@ class MetaPolicy():
             )
             return task_description.output_text
         
-    def generate_base_policy_code(self, task_description, base_policy_code):
+    def generate_base_policy_code(self, task_description):
         # Send prompt to OpenAI to get code
         with open(FOLDER_PATH + "/Policy.py", "r", encoding="utf-8") as f:
             policy_signature = f.read()
             
         with open(FOLDER_PATH + "/code_generator.txt", "r", encoding="utf-8") as f:
             code_generator = f.read()
-            code_generator = code_generator.format(previous_code = base_policy_code,
-                                                   policy_signature = policy_signature, 
+            code_generator = code_generator.format(policy_signature = policy_signature, 
                                                    task_description = task_description)       
             base_policy_code = client.responses.create(
                 model = "gpt-4.1",
@@ -172,7 +171,7 @@ for i in range(NUM_META_ITERATIONS):
     print('task prompt generated...')
     
     #Step 2: Generate new base-policy (controller code)
-    base_policy_code = meta_policy.generate_base_policy_code(task_prompt, base_policy_code)
+    base_policy_code = meta_policy.generate_base_policy_code(task_prompt)
     print('base policy code generated...')
     #Step 3: Simulate the controller in the enviroment
     try:
