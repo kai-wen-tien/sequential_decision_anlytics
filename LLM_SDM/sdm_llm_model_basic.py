@@ -87,12 +87,12 @@ class BasePolicyExecutor():
 
 class EnergySystemSimulator():
     def __init__(self):
-        self.state_of_charge = 0
+        self.state_of_charge = 50
         self.price = load_market_data()
         self.demand = 5
     
     def reset(self):
-        self.state_of_charge = 0
+        self.state_of_charge = 50
         
     def run(self, controller):
         cost = 0
