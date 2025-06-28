@@ -107,25 +107,26 @@ class EnergySystemSimulator():
 
             # controller suggests how much to draw from battery or buy
             action = controller.take_action(self.state_of_charge, price, cost)
-                
-            # battery discharges only
-            battery_contrib = min(max(-action, 0), self.state_of_charge)
             
-            # if charging, market contributes to battery
-            battery_charge = max(action, 0)
-        
-            # market supplies demand minus battery support
-            market_for_demand = max(demand - battery_contrib, 0)
-        
-            market_contrib = battery_charge + market_for_demand
+            # clip actions (aoviding overcharge or overdischarge)
+            # if trying to charge
+            if action > 0:
+                battery_charge = min(action, 100 - self.state_of_charge)
+                battery_discharge = 0
+            else:
+                battery_discharge = min(-action, self.state_of_charge, demand)
+                battery_charge = 0
+    
+            market_contrib = demand - battery_discharge + battery_charge
+    
+            self.state_of_charge = self.state_of_charge - battery_discharge + battery_charge
+            self.state_of_charge = max(0, min(100, self.state_of_charge))
+    
             cost_per_time = price * market_contrib
             cost += cost_per_time
-        
-            # update SOC (only charge from battery_charge)
-            self.state_of_charge = max(0, min(100, self.state_of_charge - battery_contrib + battery_charge))         
             
             soc_record.append(self.state_of_charge)
-            action_record.append(action)
+            action_record.append(battery_charge - battery_discharge) # record the real action
             cost_per_time_record.append(cost_per_time)
             
         return {'battery_level_record': soc_record, 
@@ -133,8 +134,6 @@ class EnergySystemSimulator():
                 'cost_per_time_record': cost_per_time_record, 
                 'total_cost': cost}
         
-
-
 
 # %% the hierarchical decison structure
 
