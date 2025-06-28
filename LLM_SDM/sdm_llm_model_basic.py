@@ -89,6 +89,7 @@ class EnergySystemSimulator():
     def __init__(self):
         self.state_of_charge = 0
         self.price = load_market_data()
+        self.demand = 5
     
     def reset(self):
         self.state_of_charge = 0
@@ -102,23 +103,22 @@ class EnergySystemSimulator():
         
         for t in range(len(self.price)):
             price = self.price[t]
-            demand = 5              # constant demand per time step
 
             # controller suggests how much to draw from battery or buy
             action = controller.take_action(self.state_of_charge, price, cost)
-            
+                
             # total supply = battery discharge + market buy
             battery_contrib = min(max(-action, 0), self.state_of_charge)
             market_contrib = max(action, 0)     # buy only when action > 0
             total_supply = battery_contrib + market_contrib
             
             # ensure demand is met (for realism)
-            if total_supply < demand:
+            if total_supply < self.demand:
                 # buy the rest from market
-                deficit = demand - total_supply
-                action += deficit
+                deficit = self.demand - total_supply
                 market_contrib += deficit
-                total_supply = demand
+                action += deficit
+                total_supply = self.demand
                 cost += price*deficit    # the difict price is equal to market prices
             
             # update battery state of charge
