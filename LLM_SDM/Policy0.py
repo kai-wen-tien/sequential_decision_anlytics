@@ -33,9 +33,6 @@ class Policy:
                Positive → charge
                Negative → discharge
         """
-        if market_price < 0.5:
-            action = 10
-        else:
-            action = -5
+        action = 0 # no battary, just buy from market
         
         return action

@@ -7,8 +7,10 @@ Make sure the execution directory to the same folder.
 
 """
 # %%
-FOLDER_PATH = "G:/My Drive/00_Temp Workspace/250622_研究_LLM_SDM"
-with open(FOLDER_PATH + "/OPENAI_API_KEY.txt", newline='', encoding='utf-8') as f:
+KEY_PATH = "G:/My Drive/00_Temp Workspace/250622_研究_LLM_SDM"
+FOLDER_PATH = "C:/Users/USER/OneDrive/Documents/GitHub/sequential_decision_anlytics/LLM_SDM"
+
+with open(KEY_PATH + "/OPENAI_API_KEY.txt", newline='', encoding='utf-8') as f:
     OPENAI_API_KEY = f.read()
 from openai import OpenAI
 import csv
@@ -81,9 +83,9 @@ class BasePolicyExecutor():
     def __init__(self, code_text):
         self.namespace = {}   #isolate the variables
         exec(code_text, self.namespace)
-    def take_action(self,  state_of_charge, market_price, cost):
-        temp_policy = self.namespace['Policy'](imported_energy=0, market_price=market_price, cost=cost)
-        return temp_policy.take_action(state_of_charge, 0, market_price, cost) ## check imported energy
+    def take_action(self,  state_of_charge, imported_energy, market_price, cost):
+        temp_policy = self.namespace['Policy'](imported_energy, market_price=market_price, cost=cost)
+        return temp_policy.take_action(state_of_charge, imported_energy, market_price, cost) ## check imported energy
 
 class EnergySystemSimulator():
     def __init__(self):
@@ -99,14 +101,14 @@ class EnergySystemSimulator():
         soc_record = []
         action_record = []
         cost_per_time_record = []
-
+        imported_energy = 0
         
         for t in range(len(self.price)):
             price = self.price[t]
             demand = self.demand
 
             # controller suggests how much to draw from battery or buy
-            action = controller.take_action(self.state_of_charge, price, cost)
+            action = controller.take_action(self.state_of_charge, imported_energy, price, cost)
             
             # clip actions (aoviding overcharge or overdischarge)
             # if trying to charge
@@ -118,6 +120,7 @@ class EnergySystemSimulator():
                 battery_charge = 0
     
             market_contrib = demand - battery_discharge + battery_charge
+            imported_energy = market_contrib
     
             self.state_of_charge = self.state_of_charge - battery_discharge + battery_charge
             self.state_of_charge = max(0, min(100, self.state_of_charge))

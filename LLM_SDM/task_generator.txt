@@ -17,3 +17,4 @@ Provide:
 1. Key performance insights (2-3 points)
 2. Strategic direction: continous or pivot
 3. High-level imporvement areas
+4. Necessary statistics of demand or costs 
