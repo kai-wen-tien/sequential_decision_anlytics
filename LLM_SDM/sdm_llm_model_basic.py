@@ -45,14 +45,15 @@ class MetaPolicy():
             )
             return task_description.output_text
         
-    def generate_base_policy_code(self, task_description):
+    def generate_base_policy_code(self, task_description, base_policy_code):
         # Send prompt to OpenAI to get code
         with open(FOLDER_PATH + "/Policy.py", "r", encoding="utf-8") as f:
             policy_signature = f.read()
             
         with open(FOLDER_PATH + "/code_generator.txt", "r", encoding="utf-8") as f:
             code_generator = f.read()
-            code_generator = code_generator.format(policy_signature = policy_signature, 
+            code_generator = code_generator.format(previous_code = base_policy_code,
+                                                   policy_signature = policy_signature, 
                                                    task_description = task_description)       
             base_policy_code = client.responses.create(
                 model = "gpt-4.1",
@@ -75,35 +76,37 @@ class MetaPolicy():
             model = "gpt-4.1", 
             input = corrector_prompt
             )
-        return corrected_code
+        return corrected_code.output_text
         
 class BasePolicyExecutor():
     def __init__(self, code_text):
         self.namespace = {}   #isolate the variables
         exec(code_text, self.namespace)
     def take_action(self,  state_of_charge, market_price, cost):
-        temp_policy = self.namespace['Policy'](0, market_price, cost)
+        temp_policy = self.namespace['Policy'](imported_energy=0, market_price=market_price, cost=cost)
         return temp_policy.take_action(state_of_charge, 0, market_price, cost) ## check imported energy
 
 class EnergySystemSimulator():
     def __init__(self):
         self.state_of_charge = 50
         self.price = load_market_data()
+    
+    def reset(self):
+        self.state_of_charge = 50
         
-    def run(self, controller, start_index, end_index):
+    def run(self, controller):
         cost = 0
         soc_record = []
         action_record = []
         cost_per_time_record = []
 
         
-        for t in range(end_index - start_index + 1):
+        for t in range(len(self.price)):
             price = self.price[t]
             demand = 5              # constant demand per time step
 
             # controller suggests how much to draw from battery or buy
-            # action = controller.take_action(self.state_of_charge, price, cost)
-            action = 5
+            action = controller.take_action(self.state_of_charge, price, cost)
             
             # total supply = battery discharge + market buy
             battery_contrib = min(max(-action, 0), self.state_of_charge)
@@ -114,9 +117,10 @@ class EnergySystemSimulator():
             if total_supply < demand:
                 # buy the rest from market
                 deficit = demand - total_supply
+                action += deficit
                 market_contrib += deficit
                 total_supply = demand
-                cost += price*deficit
+                cost += price*deficit    # the difict price is equal to market prices
             
             # update battery state of charge
             self.state_of_charge = max(0, min(100, 
@@ -146,25 +150,35 @@ meta_policy = MetaPolicy()
 simulator = EnergySystemSimulator()
 history = []
 
+#save the baseline (without battery)
 with open(FOLDER_PATH + "/Policy0.py", "r", encoding="utf-8") as f:
     base_policy_code = f.read()
 
+controller = BasePolicyExecutor(base_policy_code)
+result = simulator.run(controller)
+history.append(result)
+
 # Planning horizon
 NUM_META_ITERATIONS = 10
-TIME_PER_META = 15
+# TIME_PER_META = 15
 
 for i in range(NUM_META_ITERATIONS):
     print(f"\n--- Meta Interation {i+1} ---")
+    
+    simulator.reset()      #reset the simulator
     
     #Step 1: Generate or update task (prompt) using meta-policy
     task_prompt = meta_policy.generate_task(history, base_policy_code)
     print('task prompt generated...')
     
     #Step 2: Generate new base-policy (controller code)
-    base_policy_code = meta_policy.generate_base_policy_code(task_prompt)
+    base_policy_code = meta_policy.generate_base_policy_code(task_prompt, base_policy_code)
     print('base policy code generated...')
+    #Step 3: Simulate the controller in the enviroment
     try:
         controller = BasePolicyExecutor(base_policy_code)
+        print('base policy code generated...')
+        result = simulator.run(controller)
     except Exception as e:
         print(f"[ERROR] BasePolicy Executor filed: {e}")
         
@@ -174,16 +188,29 @@ for i in range(NUM_META_ITERATIONS):
         # Retry
         controller = BasePolicyExecutor(base_policy_code)
         print('base policy code generated...')
+        result = simulator.run(controller)
     
-    #Step 3: Simulate the controller in the enviroment
-    result = simulator.run(controller, i, i*TIME_PER_META + TIME_PER_META - 1)
     print('simulation finished...')
     
     #Step 4: Collect performance
     history.append(result)
     
     
-    
+# %% plot the total costs
+import matplotlib.pyplot as plt
+from matplotlib.ticker import PercentFormatter
+
+total_cost = [h['total_cost'] for h in history] 
+improvement = [(total_cost[0] - tc)/total_cost[0] for tc in total_cost]
+
+plt.plot(range(len(improvement)), improvement, marker='>')
+plt.gca().yaxis.set_major_formatter(PercentFormatter(xmax=1.0))  # Format as percentage
+plt.xlabel("Meta Iteration")
+plt.ylabel("Improvement (%)")
+plt.title("Cost Improvement over Meta-Iterations")
+plt.grid(True)
+plt.show()
+   
     
     
     
