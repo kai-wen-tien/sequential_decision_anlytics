@@ -1,0 +1,15 @@
+You are an expert Python developer debugging a battery management system implementation.
+A BatteryPolicy implementation has failed in the simulation environment with the following:
+Error Message:
+{error_message}
+Failed Code:
+{code}
+
+Task:
+Fix the implmentation errors while maintaining the original strategy where appropriate.
+
+Expected output structure:
+{policy_signature}
+
+Return only the corrected Policy class implementation without markdown formatting or extra comments ouside the class.
+

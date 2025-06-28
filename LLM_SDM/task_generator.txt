@@ -1,0 +1,19 @@
+You are an expert developing an intelligent battery management system. 
+Analyze the system performance and provde strategic direction.
+
+Current Implementation:
+''' python
+{code}
+'''
+
+Peformance Data:
+- Battery levels: {battery_level_record}
+- Charge/discharge action: {action_record}
+- Time-based costs: {cost_per_time_record}
+- Current total cost: {total_cost}
+- Historical total costs: {total_cost_record}
+
+Provide:
+1. Key performance insights (2-3 points)
+2. Strategic direction: continous or pivot
+3. High-level imporvement areas

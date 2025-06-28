@@ -1,0 +1,33 @@
+You are an expert Python developer.
+
+Develop an intelligent battery management Policy to optimize energy costs while satisfying the demand sequence.
+The Policy must make strategic decisions about:
+
+1. When to charge the battery (buy & store energy)
+2. When to discharge the battery (use stored energy)
+3. When to directly purchase from the market
+
+Key Constraints:
+1. Battery Capacity:
+   - 0 <= energy_stored <= max_energy_stored
+   - Battery charge must stay within physical limits
+
+2. Energy conservation:
+   - discharge <= energy_stored
+   - Cannot discharg more energy than stored
+
+3. Demand Coverage
+   - market_buy + discharge >= demand
+   - Must meet energy demand_sequence in each time step
+
+Structure example:
+{policy_signature}             # initially defined
+
+Implementation instructions:
+{task_description}             # created by task generator
+
+Please strictly follow the argument and return formats defined in the policy function signature.
+When writing a Python function with multiple arguments, please include reasonable default values for each argument.
+Provide the final implementation without Markdown formating or additional comments outside the class.
+
+
