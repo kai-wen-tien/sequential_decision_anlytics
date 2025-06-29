@@ -21,14 +21,15 @@ Author: Kai-Wen Tien
 Last Updated: 2025/06/29
 """
 # %%
-KEY_PATH = "G:/My Drive/00_Temp Workspace/250622_研究_LLM_SDM"
-FOLDER_PATH = "C:/Users/USER/OneDrive/Documents/GitHub/sequential_decision_anlytics/LLM_SDM"
 
-with open(KEY_PATH + "/OPENAI_API_KEY.txt", newline='', encoding='utf-8') as f:
-    OPENAI_API_KEY = f.read()
 from openai import OpenAI
 import csv
 
+KEY_PATH = "G:/My Drive/00_Temp Workspace/250622_研究_LLM_SDM"
+FOLDER_PATH = "C:/Users/USER/OneDrive/Documents/GitHub/sequential_decision_anlytics/LLM_SDM"
+with open(KEY_PATH + "/OPENAI_API_KEY.txt", newline='', encoding='utf-8') as f:
+    OPENAI_API_KEY = f.read()
+    
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 # loading all templates
@@ -91,7 +92,7 @@ class MetaPolicy():
     
     def correct_code(self, failed_code, error_message):
         # correct the code
-        corrector_prompt = self.corrector_prompt_template.format(
+        corrector_prompt = self.corrector_template.format(
             error_message = error_message,
             code = failed_code,
             policy_signature = self.policy_signature
