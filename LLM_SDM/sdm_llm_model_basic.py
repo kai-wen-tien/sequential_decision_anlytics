@@ -61,7 +61,7 @@ class MetaPolicy():
         total_cost_record = [h['total_cost'] for h in history]
         
         # Analyze last result, return new task prompt
-        task_generator = self.task_generator_template.format(
+        task_generator = self.task_template.format(
             code = base_policy_code,
             battery_level_record = battery_level_record, 
             action_record = action_record, 
@@ -78,7 +78,7 @@ class MetaPolicy():
         
     def generate_base_policy_code(self, task_description):
         # Send prompt to OpenAI to get code
-        code_generator = self.code_generator_template.format(
+        code_generator = self.code_template.format(
             policy_signature = self.policy_signature, 
             task_description = task_description
         )       
@@ -169,7 +169,7 @@ meta_policy = MetaPolicy()
 simulator = EnergySystemSimulator()
 history = []
 
-#save the baseline (without battery)
+#save the initial base policy (without battery)
 with open(FOLDER_PATH + "/Policy0.py", "r", encoding="utf-8") as f:
     base_policy_code = f.read()
 
@@ -179,7 +179,6 @@ history.append(result)
 
 # Planning horizon
 NUM_META_ITERATIONS = 10
-# TIME_PER_META = 15
 
 for i in range(NUM_META_ITERATIONS):
     print(f"\n--- Meta Decision Loop {i+1} ---")
