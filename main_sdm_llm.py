@@ -162,7 +162,6 @@ class EnergySystemSimulator():
                 'cost_per_time_record': cost_per_time_record, 
                 'total_cost': cost}
         
-
 # %% the hierarchical decison structure
 
 # initial setup
@@ -202,7 +201,7 @@ for i in range(NUM_META_ITERATIONS):
         
         # Apply error correction here
         base_policy_code = meta_policy.correct_code(base_policy_code, str(e))
-        print('base policy code generated...')        
+        print('base policy code corrected...')        
         
         # Retry
         controller = BasePolicyExecutor(base_policy_code)
@@ -212,7 +211,6 @@ for i in range(NUM_META_ITERATIONS):
     
     #Step 4: Collect performance
     history.append(result)
-    
     
 # %% plot the total costs
 import matplotlib.pyplot as plt
