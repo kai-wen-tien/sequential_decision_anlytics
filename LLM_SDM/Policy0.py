@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Jun 24 20:57:08 2025
-
-@author: Kai
-"""
-
 class Policy:
     def __init__(self, imported_energy, market_price, cost):
         """

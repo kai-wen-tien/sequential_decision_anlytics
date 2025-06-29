@@ -1,10 +1,24 @@
 # -*- coding: utf-8 -*-
 """
-Spyder Editor
+Meta-Policy Optimization Framework for Battery Energy Management using LLMs
 
-This is a temporary script file.
-Make sure the execution directory to the same folder.
+This script simulates an adaptive decision-making process in a simplified energy system 
+where a controller manages battery charge/discharge actions based on electricity price data. 
 
+Key features:
+- Implements a hierarchical decision structure using a meta-policy and a base policy.
+- Leverages Large Language Models (LLMs) to iteratively generate, evaluate, and refine base policies.
+- Uses simulation feedback (e.g., battery state of charge, cost, action history) to guide improvements.
+- Automatically handles code generation and correction for policy controllers via OpenAI API.
+- Tracks performance improvement over iterations.
+
+Usage Notes:
+- Ensure that the working directory includes required prompt templates and price data files.
+- Set `KEY_PATH` and `FOLDER_PATH` appropriately for your environment.
+- Designed for research and experimentation in sequential decision-making and LLM planning.
+
+Author: Kai-Wen Tien
+Last Updated: 2025/06/29
 """
 # %%
 KEY_PATH = "G:/My Drive/00_Temp Workspace/250622_研究_LLM_SDM"
@@ -14,7 +28,10 @@ with open(KEY_PATH + "/OPENAI_API_KEY.txt", newline='', encoding='utf-8') as f:
     OPENAI_API_KEY = f.read()
 from openai import OpenAI
 import csv
+
 client = OpenAI(api_key=OPENAI_API_KEY)
+
+# loading all templates
 
 def load_market_data():
     second_column = []
@@ -26,55 +43,62 @@ def load_market_data():
     return second_column
 
 class MetaPolicy():
+    def __init__(self):
+        # Load prompt templates from local files
+        self.task_template = self._load_template("task_generator.txt")
+        self.policy_signature = self._load_template("Policy.py")
+        self.code_template = self._load_template("code_generator.txt")
+        self.corrector_template = self._load_template("error_corrector.txt")
+        
+    def _load_template(self, filename):
+        with open(FOLDER_PATH + f"/{filename}", "r", encoding="utf-8") as f:
+            return f.read()
     
     def generate_task(self, history, base_policy_code):
         battery_level_record = [h['battery_level_record'] for h in history]
         action_record = [h['action_record'] for h in history]
         cost_per_time_record = [h['cost_per_time_record'] for h in history]
         total_cost_record = [h['total_cost'] for h in history]
+        
         # Analyze last result, return new task prompt
-        with open(FOLDER_PATH + "/task_generator.txt", "r", encoding="utf-8") as f:
-            task_generator = f.read()
-            task_generator = task_generator.format(code = base_policy_code,
-                                                   battery_level_record = battery_level_record, 
-                                                   action_record = action_record, 
-                                                   cost_per_time_record = cost_per_time_record,
-                                                   total_cost = 'None' if not total_cost_record else total_cost_record[-1], 
-                                                   total_cost_record = total_cost_record)
-            task_description = client.responses.create(
-                model = "gpt-4.1",
-                input = task_generator
-            )
-            return task_description.output_text
+        task_generator = self.task_generator_template.format(
+            code = base_policy_code,
+            battery_level_record = battery_level_record, 
+            action_record = action_record, 
+            cost_per_time_record = cost_per_time_record,
+            total_cost = 'None' if not total_cost_record else total_cost_record[-1], 
+            total_cost_record = total_cost_record
+        )
+        
+        task_description = client.responses.create(
+            model = "gpt-4.1-mini",
+            input = task_generator
+        )
+        return task_description.output_text
         
     def generate_base_policy_code(self, task_description):
         # Send prompt to OpenAI to get code
-        with open(FOLDER_PATH + "/Policy.py", "r", encoding="utf-8") as f:
-            policy_signature = f.read()
-            
-        with open(FOLDER_PATH + "/code_generator.txt", "r", encoding="utf-8") as f:
-            code_generator = f.read()
-            code_generator = code_generator.format(policy_signature = policy_signature, 
-                                                   task_description = task_description)       
-            base_policy_code = client.responses.create(
-                model = "gpt-4.1",
-                input = code_generator
-            )
-            return base_policy_code.output_text
+        code_generator = self.code_generator_template.format(
+            policy_signature = self.policy_signature, 
+            task_description = task_description
+        )       
+        
+        base_policy_code = client.responses.create(
+            model = "gpt-4.1-mini",
+            input = code_generator
+        )
+        return base_policy_code.output_text
     
     def correct_code(self, failed_code, error_message):
-        with open(FOLDER_PATH + "/Policy.py", "r", encoding="utf-8") as f:
-            policy_signature = f.read()
-
-        with open(FOLDER_PATH + "/error_corrector.txt", "r", encoding="utf-8") as f:
-            corrector_prompt = f.read().format(
-                error_message = error_message,
-                code = failed_code,
-                policy_signature = policy_signature
-            )
+        # correct the code
+        corrector_prompt = self.corrector_prompt_template.format(
+            error_message = error_message,
+            code = failed_code,
+            policy_signature = self.policy_signature
+        )
         
         corrected_code = client.responses.create(
-            model = "gpt-4.1", 
+            model = "gpt-4.1-mini", 
             input = corrector_prompt
             )
         return corrected_code.output_text
@@ -197,7 +221,7 @@ from matplotlib.ticker import PercentFormatter
 total_cost = [h['total_cost'] for h in history] 
 improvement = [(total_cost[0] - tc)/total_cost[0] for tc in total_cost]
 
-plt.plot(range(len(improvement)), improvement, marker='>')
+plt.plot(range(len(improvement)), improvement, marker='s')
 plt.gca().yaxis.set_major_formatter(PercentFormatter(xmax=1.0))  # Format as percentage
 plt.xlabel("Meta Iteration")
 plt.ylabel("Improvement (%)")
