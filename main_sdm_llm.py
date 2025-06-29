@@ -26,7 +26,7 @@ from openai import OpenAI
 import csv
 
 KEY_PATH = "G:/My Drive/00_Temp Workspace/250622_研究_LLM_SDM"
-FOLDER_PATH = "C:/Users/USER/OneDrive/Documents/GitHub/sequential_decision_anlytics/LLM_SDM"
+FOLDER_PATH = "C:/Users/USER/OneDrive/Documents/GitHub/sequential_decision_anlytics"
 with open(KEY_PATH + "/OPENAI_API_KEY.txt", newline='', encoding='utf-8') as f:
     OPENAI_API_KEY = f.read()
     
@@ -36,7 +36,7 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 def load_market_data():
     second_column = []
-    with open(FOLDER_PATH + "/market price.csv", newline='', encoding='utf-8') as f:
+    with open(FOLDER_PATH + "/data/market_price.csv", newline='', encoding='utf-8') as f:
         reader = csv.reader(f)
         for row in reader:
             second_column.append(float(row[1]))  # Get the 2nd column (index 1)
@@ -46,10 +46,10 @@ def load_market_data():
 class MetaPolicy():
     def __init__(self):
         # Load prompt templates from local files
-        self.task_template = self._load_template("task_generator.txt")
-        self.policy_signature = self._load_template("Policy.py")
-        self.code_template = self._load_template("code_generator.txt")
-        self.corrector_template = self._load_template("error_corrector.txt")
+        self.task_template = self._load_template("prompts/prompt_task_generator.txt")
+        self.policy_signature = self._load_template("policies/policy_signature.py")
+        self.code_template = self._load_template("prompts/prompt_code_generator.txt")
+        self.corrector_template = self._load_template("prompts/prompt_error_corrector.txt")
         
     def _load_template(self, filename):
         with open(FOLDER_PATH + f"/{filename}", "r", encoding="utf-8") as f:
@@ -171,7 +171,7 @@ simulator = EnergySystemSimulator()
 history = []
 
 #save the initial base policy (without battery)
-with open(FOLDER_PATH + "/Policy0.py", "r", encoding="utf-8") as f:
+with open(FOLDER_PATH + "/policies/baseline_policy.py", "r", encoding="utf-8") as f:
     base_policy_code = f.read()
 
 controller = BasePolicyExecutor(base_policy_code)
